@@ -20,6 +20,11 @@ library(glmnet)
 library(e1071)
 library(pROC)
 library(class)
+library(cluster)
+library(HSAUR)
+library(fpc)
+library(glmnet)
+
 getwd()
 setwd('/Users/nareshshah/Downloads')
 Water1 = read.csv2("~/Downloads/wq.csv", header=T, sep=",")
@@ -156,9 +161,6 @@ IQR_ECMF = IQR(Water1$E..coli..MF.)
 Outlier_ECMF = mean(Water1$E..coli..MF.)+ 2.5*IQR(Water1$E..coli..MF.)
 Water1 = filter(Water1, Water1$E..coli..MF. < Outlier_ECMF)
 hist(Water1$E..coli..MF.)
-
-
-
 
 
 
@@ -329,13 +331,17 @@ plot(E..coli..MF. ~ DO..mg.L.+EC..uS.cm.+pH+Turb...NTU.+Susp..Solids..mg.L.+NO3.
 #Most of these models are non-normal, therefore we scale all of them
 
 
-fits2 =  lm( scale(E..coli..MF.) ~  New.Site.Code...post.Jun.2007.+ scale(PO4.filt...mg.L.as.P.)+ scale(Total.P..mg.L.as.P.)+ scale(Susp..Solids..mg.L.)+scale(Total.N)+ scale(Temp...C.)+scale(training_data$DO..mg.L.)+quality+landuse, data = training_data)
+fits2 =  lm(E..coli..MF. ~  PO4.filt...mg.L.as.P.+ Total.P..mg.L.as.P.+ Susp..Solids..mg.L.+Total.N+ Temp...C.+training_data$DO..mg.L.+quality+landuse, data = training_data,scale = T)
+
+fits2.pred = predict(fits2,newdata = training_data)
+
+mean((fits2.pred - training_data$E..coli..MF.)^2, na.rm = T)
 
 summary(fits2)
 
 #Applying the expected transforms
 
-fits3 = lm(scale(E..coli..MF.) ~  New.Site.Code...post.Jun.2007.+ scale(I(exp(PO4.filt...mg.L.as.P.)))+ scale(Total.P..mg.L.as.P.)+ scale(Susp..Solids..mg.L.)+scale(Total.N)+ scale(Temp...C.)+scale(I(training_data$DO..mg.L.^2))+scale(I(training_data$DO....sat..^2))+quality+landuse, data = training_data)
+fits3 = lm(scale(E..coli..MF.) ~  New.Site.Code...post.Jun.2007.+ scale(I(exp(PO4.filt...mg.L.as.P.)))+ scale(Total.P..mg.L.as.P.)+ scale(Susp..Solids..mg.L.)+scale(Total.N)+ scale(Temp...C.)+scale(poly(training_data$DO..mg.L.,2))+scale(poly(training_data$DO....sat..,2))+quality+landuse, data = training_data)
 
 summary(fits3)
 #Checking fit on training dataset
@@ -346,7 +352,7 @@ test_data$Ecoli = predict(fits3,newdata = test_data)
 
 #What does pH of the water depend on? 
 
-fits4 =  lm(pH ~  New.Site.Code...post.Jun.2007.+ scale(EC..uS.cm.)+scale(Turb...NTU.^2)+scale(Susp..Solids..mg.L.)+scale(Total.N)+scale(Total.P..mg.L.as.P.)+quality+landuse, data = training_data)
+fits4 =  lm(pH ~  New.Site.Code...post.Jun.2007.+ scale(EC..uS.cm.)+scale(poly(Turb...NTU.,2))+scale(Susp..Solids..mg.L.)+scale(Total.N)+scale(Total.P..mg.L.as.P.)+quality+landuse, data = training_data)
 
 summary(fits4)
 
@@ -371,7 +377,7 @@ test_data$pHlabel = cut(test_data$pH,2*(2:5),labels = c('Acidic','Slightly Acidi
 plot(training_data$pHlabel)
 plot(test_data$pHlabel)
 
-#Looks like most of the sites are neutral.
+#Looks like most of the sites are slightly acidic.
 
 fits1cl =  multinom(pHlabel ~  New.Site.Code...post.Jun.2007.+ scale(PO4.filt...mg.L.as.P.)+ scale(Total.P..mg.L.as.P.)+ scale(Susp..Solids..mg.L.)+scale(Total.N)+ scale(Temp...C.)+scale(DO..mg.L.)+ quality+landuse, data = training_data)
 
@@ -415,16 +421,29 @@ kmeans1 = kmeans(ya[9:22],3,nstart = 20)
 plot(ya[9:22], col=(kmeans1$cluster +1), main="K-Means Clustering Results with K=3", pch=20, cex=2)
 
 kmeans1$tot.withinss
+
+diss1 = daisy(ya[9:22])
+de1 = diss1^2
+sk1 =  silhouette(kmeans1$cluster,de1)
+plot(sk1)
 summary(kmeans1)
+
+plotcluster(ya[9:22], kmeans1$cluster)
 
 kmeans2 = kmeans(ya[9:22],4,nstart = 20)
 
 kmeans2$tot.withinss
 summary(kmeans2)
 
+plotcluster(ya[9:22], kmeans2$cluster)
+
 kmeans3 = kmeans(ya[9:22],5,nstart = 20)
 summary(kmeans3)
 kmeans3$tot.withinss
+
+plotcluster(ya[9:22], kmeans3$cluster)
+clusplot(ya[9:22], kmeans3$cluster, color=TRUE, shade=TRUE, labels=2, lines=0)
+unique(ya$New.Site.Code...post.Jun.2007.)
 
 ```
 
@@ -491,6 +510,11 @@ plot.roc(test_data$quality,as.numeric(predictq_l))
 plot.roc(test_data$quality,as.numeric(predictq_rb))
 
 
+#SVM Regression for E Coli count
+
+
+
+
 ```
 
 ```{r - Modeling Part 6 - K Nearest Neighbors}
@@ -507,8 +531,40 @@ KNN1 = knn()
 ```
 
 ```{r - Modeling Part 7 - Regression with automatic feature selection and cross-validation}
+#Ridge regression
+grid=10^seq(10,-2, length =100)
+x = model.matrix(ya$E..coli..MF. ~.,data = ya[9:22])
+y = ya$E..coli..MF.
+ridge.mod = glmnet(x,y,alpha=0, lambda=grid)
+
+#cross-validation
+set.seed(1)
+train=sample (1: nrow(x), nrow(x)/2)
+test=(-train)
+y.test=y[test]
+cv.out=cv.glmnet(x[train ,],y[ train],alpha=0)
+plot(cv.out)
+bestlam =cv.out$lambda.min
+ridge.pred=predict(ridge.mod ,s=bestlam ,newx=x[test ,])
+mean((ridge.pred -y.test)^2)
+out=glmnet(x,y,alpha=0)
+ridge.coef=predict(out ,type="coefficients",s= bestlam) [1:16,]
 
 
+#Lasso regression
+lasso.mod=glmnet(x[train ,],y[ train],alpha=1, lambda =grid)
+plot(lasso.mod)
+
+#cross-validation
+set.seed(1)
+cv.out=cv.glmnet(x[train ,],y[ train],alpha=1)
+plot(cv.out)
+bestlam =cv.out$lambda.min
+lasso.pred=predict(lasso.mod ,s=bestlam ,newx=x[test ,])
+mean((lasso.pred -y.test)^2)
+
+out=glmnet (x,y,alpha=1, lambda=grid)
+lasso.coef=predict(out ,type="coefficients",s= bestlam) [1:16,]
 ```
 
 ```{r - Modeling Part 8 - Classfication with LDA, QDA}
