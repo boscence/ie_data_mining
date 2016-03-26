@@ -24,6 +24,7 @@ library(cluster)
 library(HSAUR)
 library(fpc)
 library(glmnet)
+library(kernlab)
 
 getwd()
 setwd('/Users/nareshshah/Downloads')
@@ -331,24 +332,31 @@ plot(E..coli..MF. ~ DO..mg.L.+EC..uS.cm.+pH+Turb...NTU.+Susp..Solids..mg.L.+NO3.
 #Most of these models are non-normal, therefore we scale all of them
 
 
-fits2 =  lm(E..coli..MF. ~  PO4.filt...mg.L.as.P.+ Total.P..mg.L.as.P.+ Susp..Solids..mg.L.+Total.N+ Temp...C.+training_data$DO..mg.L.+quality+landuse, data = training_data,scale = T)
+fits2 =  lm(E..coli..MF. ~  PO4.filt...mg.L.as.P.+ Total.P..mg.L.as.P.+ Susp..Solids..mg.L.+Total.N+ Temp...C.+DO..mg.L., data = training_data,scale = T)
 
-fits2.pred = predict(fits2,newdata = training_data)
+fits2.pred = predict(fits2,newdata = test_data)
 
-mean((fits2.pred - training_data$E..coli..MF.)^2, na.rm = T)
+fits2.test_rss = sum((test_data$E..coli..MF. - fits2.pred )^2, na.rm= T)
+fits2.testr2 = (1-(fits2.test_rss/def.rss))
 
 summary(fits2)
 
 #Applying the expected transforms
 
-fits3 = lm(scale(E..coli..MF.) ~  New.Site.Code...post.Jun.2007.+ scale(I(exp(PO4.filt...mg.L.as.P.)))+ scale(Total.P..mg.L.as.P.)+ scale(Susp..Solids..mg.L.)+scale(Total.N)+ scale(Temp...C.)+scale(poly(training_data$DO..mg.L.,2))+scale(poly(training_data$DO....sat..,2))+quality+landuse, data = training_data)
+fits3 = lm(scale(E..coli..MF.) ~ I(exp(PO4.filt...mg.L.as.P.))+ Total.P..mg.L.as.P.+ Susp..Solids..mg.L.+Total.N+ Temp...C.+DO..mg.L.^2 + landuse + quality, data = training_data)
+
+fits3.pred = predict(fits3,newdata = test_data)
+
+fits3.test_rss = sum((test_data$E..coli..MF. - fits3.pred )^2, na.rm= T)
+fits3.testr2 = (1-(fits3.test_rss/def.rss))
+
 
 summary(fits3)
 #Checking fit on training dataset
 
 
 #Testing this on the test dataset
-test_data$Ecoli = predict(fits3,newdata = test_data)
+test_data$Ecoli = predict(fits2,test_data)
 
 #What does pH of the water depend on? 
 
@@ -498,10 +506,10 @@ table(as.numeric(test_data$quality),as.numeric(predictq_p))
 table(as.numeric(test_data$quality),as.numeric(predictq_l))
 table(as.numeric(test_data$quality),as.numeric(predictq_rb))
 
-
-auc(as.numeric(test_data$quality),as.numeric(predictq_p))
-auc(as.numeric(test_data$quality),as.numeric(predictq_l))
-auc(as.numeric(test_data$quality),as.numeric(predictq_rb))
+AUC = list()
+AUC[1] = auc(as.numeric(test_data$quality),as.numeric(predictq_p))
+AUC[2] = auc(as.numeric(test_data$quality),as.numeric(predictq_l))
+AUC[3] = auc(as.numeric(test_data$quality),as.numeric(predictq_rb))
 
 
 
@@ -512,8 +520,16 @@ plot.roc(test_data$quality,as.numeric(predictq_rb))
 
 #SVM Regression for E Coli count
 
+e_lsvm = svm(training_data$E..coli..MF. ~ ., data = training_data[9:22], scale = T, type = 'eps-regression', kernel = 'polynomial', cost = 100, epsilon = 0.1, tolerance = 0.001, shrinking = T, fitted = T)
 
+e_lsvm
 
+e_lsvm.pred = predict(e_lsvm, newdata = test_data[9:22])
+e_lsvm.rss = sum((test_data$E..coli..MF. - e_lsvm.pred)^2)
+
+def.pred = mean(training_data$E..coli..MF.)
+def.rss = sum((test_data$E..coli..MF. - def.pred)^2)
+e_lsvm.r2pseudo = (1- (e_lsvm.rss/def.rss))
 
 ```
 
@@ -606,7 +622,7 @@ summary(qfit_LDA)
 predictq_LDA = predict(qfit_LDA,type = 'class',newdata = test_data)
 
 table(as.numeric(test_data$quality),as.numeric(predictq_LDA$class))
-qauc_LDA =auc(as.numeric(test_data$quality),as.numeric(predictq_LDA$class))
+AUC[4] =auc(as.numeric(test_data$quality),as.numeric(predictq_LDA$class))
 
 plot.roc(test_data$quality,as.numeric(predictq_LDA$class))
 
@@ -620,16 +636,20 @@ summary(qfit_QDA)
 predictq_QDA = predict(qfit_QDA,type = 'class',newdata = test_data)
 
 table(as.numeric(test_data$quality),as.numeric(predictq_QDA))
-qauc_QDA =auc(as.numeric(test_data$quality),as.numeric(predictq_QDA))
+AUC[5] =auc(as.numeric(test_data$quality),as.numeric(predictq_QDA))
 
 plot.roc(test_data$quality,as.numeric(predictq_QDA))
 
 #Comparing AUC for QDA,LDA,SVM with different kernels, Logistic Regression for quality data
 
-
+barplot(as.numeric(AUC), names.arg = c('PSVM','LSVM','RSVM','LDA','QDA'),ylim = c(0,1), main = 'Comparing AUC for QDA,LDA,SVMs')
+abline(h = 0.5)
+abline(h = 0)
+abline(h = 0.6)
+abline(h = 0.7)
 ```
 
-```{r - Modeling with Generalized Linear Models for Regression of EColi count}
+```{r - Graphs showing performance of models vs each other - Classification and Regression}
 
 ```
 
