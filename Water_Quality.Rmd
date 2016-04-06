@@ -15,9 +15,22 @@ library(dplyr)
 library(nlme)
 library(DAAG)
 library(MASS)
+library(nnet)
+library(glmnet)
+library(e1071)
+library(pROC)
+library(class)
+library(cluster)
+library(HSAUR)
+library(fpc)
+library(glmnet)
+library(kernlab)
+
 getwd()
 setwd('/Users/nareshshah/Downloads')
 Water1 = read.csv2("~/Downloads/wq.csv", header=T, sep=",")
+Temp1 = read.csv2("~/Downloads/temp.csv",header = T, sep= ",")
+WQ1 = read.csv2("~/Downloads/quality.csv",header = T,sep = ",")
 summary(Water1)
 ```
 
@@ -152,14 +165,57 @@ hist(Water1$E..coli..MF.)
 
 
 
-
-
-
 summary(Water1)
 
 ```
 
+```{r - EDA of WQ1 - Water Quality Data}
+summary(WQ1)
+plot(WQ1$landuse)
+plot(WQ1$quality)
 
+yaWQ = left_join(Water1,WQ1,by = c('New.Site.Code...post.Jun.2007.'='site'))
+summary(yaWQ)
+
+plot(yaWQ$E..coli..MF. ~ yaWQ$quality)
+qec = lm(yaWQ$E..coli..MF. ~ yaWQ$quality)
+summary(qec)
+
+#Trying several classification algorithms
+ecq = multinom(yaWQ$quality ~ yaWQ$E..coli..MF. )
+summary(ecq)
+predecq = predict(ecq, data = yaWQ,type = 'class')
+table(predecq,yaWQ$quality)
+
+#yaWQ = filter(yaWQ, !is.na(yaWQ$quality))
+
+summary(yaWQ)
+
+```
+
+
+
+```{r - Variable selection - PCA}
+#Selecting all the numeric variables which we plan to use in modeling
+Pre_select = Water1[9:22]
+
+Principal_C.out = prcomp(Pre_select,scale = T)
+names(Principal_C.out)
+
+#Analyzing principal components by mean and scale
+Principal_C.out$center
+Principal_C.out$scale
+
+Principal_C.out$rotation
+
+biplot(Principal_C.out,scale =0)
+
+pve =100*Principal_C.out$sdev ^2/sum(Principal_C.out$sdev ^2)
+
+plot(pve , type="o", ylab="PVE", xlab=" Principal Component ",col="blue")
+
+#We decided however not to use PCA results as vectors as it makes interpretibility much worse.
+```
 
 
 
@@ -238,27 +294,26 @@ pacf(ya[complete.cases(ya$Total.P..mg.L.as.P.),]$Total.P..mg.L.as.P.)
 
 ```
 
-```{r - Modeling Part 1}
-ya1 = ya%>%filter(is.na(ya$E..coli..MF.) == F)
-data_size = floor(0.8*nrow(ya))
-train_index = sample(seq_len(nrow(ya)),size = data_size)
-training_data = ya[train_index,]
-test_data = ya[-train_index,]
+```{r - Modeling Part 1 - Regression Modeling}
+data_size = floor(0.8*nrow(yaWQ))
+train_index = sample(seq_len(nrow(yaWQ)),size = data_size)
+training_data = yaWQ[train_index,]
+test_data = yaWQ[-train_index,]
 
 
 #First basic Linear Regression for E Coli MF Count
-fits1 = lm(E..coli..MF. ~ Temp...C.+DO..mg.L.+DO..mg.L.+DO....sat..+EC..uS.cm.+pH+Turb...NTU.+Susp..Solids..mg.L.+NO3..mg.L.as.N.+NO2..mg.L.as.N.+NH3..mg.L.+TKN..mg.L.as.N.+Total.N+PO4.filt...mg.L.as.P.+Total.P..mg.L.as.P., data = training_data)
+fits1 = lm(E..coli..MF. ~ Temp...C.+DO..mg.L.+DO..mg.L.+DO....sat..+EC..uS.cm.+pH+Turb...NTU.+Susp..Solids..mg.L.+NO3..mg.L.as.N.+NO2..mg.L.as.N.+NH3..mg.L.+TKN..mg.L.as.N.+Total.N+PO4.filt...mg.L.as.P.+Total.P..mg.L.as.P.+quality + landuse, data = training_data)
 
 summary(fits1)
 
-plot(E..coli..MF. ~ Temp...C.+DO..mg.L.+DO....sat..+EC..uS.cm.+pH+Turb...NTU.+Susp..Solids..mg.L.+NO3..mg.L.as.N.+NO2..mg.L.as.N.+NH3..mg.L.+TKN..mg.L.as.N.+Total.N+PO4.filt...mg.L.as.P.+Total.P..mg.L.as.P., data = training_data)
+plot(E..coli..MF. ~ DO..mg.L.+EC..uS.cm.+pH+Turb...NTU.+Susp..Solids..mg.L.+NO3..mg.L.as.N.+NO2..mg.L.as.N.+NH3..mg.L.+TKN..mg.L.as.N.+Total.N+PO4.filt...mg.L.as.P.+Total.P..mg.L.as.P., data = training_data)
 
 # Plotting E Coli MF vs all the predictors to guess the shape of the predictors
-# E Coli seems to have a negative linear shape of correlations vs Temperature
-# E Coli seems to have a normal distribution vs Dissolved Oxygen mg L
-# E Coli seems to have a normal distribution vs Dissolved Oxygen (Sat)
-# E Coli seems to have a negative Exponent graph vs Electrical Conductivity
-# E Coli seems to have a normal distribution of correlations vs pH
+# E Coli seems to have a negative linear relationship vs Temperature
+# E Coli seems to have a quadratic relationship vs Dissolved Oxygen mg L
+# E Coli seems to have a quadratic relationship vs Dissolved Oxygen (Sat)
+# E Coli seems to have a negative Exponent relationship vs Electrical Conductivity
+# E Coli seems to have a quadratic relationship vs pH
 # E Coli seems to have an unknown realtionship vs Turbulence
 # E Coli seems to have an unknown realtionship vs Suspended Solids
 # E Coli seems to have an unknown realtionship vs NO3
@@ -277,41 +332,324 @@ plot(E..coli..MF. ~ Temp...C.+DO..mg.L.+DO....sat..+EC..uS.cm.+pH+Turb...NTU.+Su
 #Most of these models are non-normal, therefore we scale all of them
 
 
-fits2 =  lm( scale(E..coli..MF.) ~  New.Site.Code...post.Jun.2007.+ scale(PO4.filt...mg.L.as.P.)+ scale(Total.P..mg.L.as.P.)+ scale(Susp..Solids..mg.L.)+scale(Total.N)+ scale(Temp...C.)+scale(training_data$DO..mg.L.)+scale(training_data$DO....sat..), data = training_data)
+fits2 =  lm(E..coli..MF. ~  PO4.filt...mg.L.as.P.+ Total.P..mg.L.as.P.+ Susp..Solids..mg.L.+Total.N+ Temp...C.+DO..mg.L., data = training_data,scale = T)
+
+fits2.pred = predict(fits2,newdata = test_data)
+
+fits2.test_rss = sum((test_data$E..coli..MF. - fits2.pred )^2, na.rm= T)
+fits2.testr2 = (1-(fits2.test_rss/def.rss))
 
 summary(fits2)
 
 #Applying the expected transforms
 
-fits3 = lm(scale(E..coli..MF.) ~  New.Site.Code...post.Jun.2007.+ scale(exp(PO4.filt...mg.L.as.P.))+ scale(Total.P..mg.L.as.P.)+ scale(Susp..Solids..mg.L.)+scale(Total.N)+ scale(Temp...C.)+scale(training_data$DO..mg.L.^2)+scale(training_data$DO....sat..^2), data = training_data)
+fits3 = lm(scale(E..coli..MF.) ~ I(exp(PO4.filt...mg.L.as.P.))+ Total.P..mg.L.as.P.+ Susp..Solids..mg.L.+Total.N+ Temp...C.+DO..mg.L.^2 + landuse + quality, data = training_data)
+
+fits3.pred = predict(fits3,newdata = test_data)
+
+fits3.test_rss = sum((test_data$E..coli..MF. - fits3.pred )^2, na.rm= T)
+fits3.testr2 = (1-(fits3.test_rss/def.rss))
+
 
 summary(fits3)
+#Checking fit on training dataset
+
+
+#Testing this on the test dataset
+test_data$Ecoli = predict(fits2,test_data)
 
 #What does pH of the water depend on? 
 
-fits4 =  lm(pH ~  New.Site.Code...post.Jun.2007.+ scale(EC..uS.cm.)+scale(Turb...NTU.^2)+scale(Susp..Solids..mg.L.)+scale(Total.N)+scale(Total.P..mg.L.as.P.), data = training_data)
+fits4 =  lm(pH ~  New.Site.Code...post.Jun.2007.+ scale(EC..uS.cm.)+scale(poly(Turb...NTU.,2))+scale(Susp..Solids..mg.L.)+scale(Total.N)+scale(Total.P..mg.L.as.P.)+quality+landuse, data = training_data)
 
 summary(fits4)
 
 #What contributes to the amount of ammonia in water?
 
-fits5 = lm(Total.N ~  scale(training_data$NO3..mg.L.as.N.)+scale(training_data$NO2..mg.L.as.N.)+scale(training_data$NH3..mg.L.)+scale(training_data$TKN..mg.L.as.N.), data = training_data)
+fits5 = lm(Total.N ~  scale(training_data$NO3..mg.L.as.N.)+scale(training_data$NO2..mg.L.as.N.)+scale(training_data$NH3..mg.L.)+scale(training_data$TKN..mg.L.as.N.)+ quality+landuse, data = training_data)
 
 summary(fits5)
+
+
+
   
 fits = by(training_data,training_data[,'New.Site.Code...post.Jun.2007.'],function(x) lm(E..coli..MF. ~ Old.Site.Code...pre.Jun.2007.+ New.Site.Code...post.Jun.2007.+ scale(EC..uS.cm.^2)+scale(Turb...NTU.^2)+scale(Susp..Solids..mg.L.)+scale(PO4.filt...mg.L.as.P.)+scale(Total.P..mg.L.as.P.),data = x))
 ```
 
-```{r - Modeling part 2 - Classification}
+```{r - Modeling part 2 - Classification using Multinomial Logistic Regression for pH data}
 #Creating pH as a factor
-training_data$pHlabel = cut(training_data$pH,2*(0:7),labels = c('Highly Acidic','Acidic','Slightly Acidic','Neutral','Slightly Basic','Basic','Highly Basic'))
+#We restrict pH to 4 classes as the other classes do not have a significant number of values
+training_data$pHlabel = cut(training_data$pH,2*(2:5),labels = c('Acidic','Slightly Acidic','Neutral'))
+test_data$pHlabel = cut(test_data$pH,2*(2:5),labels = c('Acidic','Slightly Acidic','Neutral'))
+
+plot(training_data$pHlabel)
+plot(test_data$pHlabel)
+
+#Looks like most of the sites are slightly acidic.
+
+fits1cl =  multinom(pHlabel ~  New.Site.Code...post.Jun.2007.+ scale(PO4.filt...mg.L.as.P.)+ scale(Total.P..mg.L.as.P.)+ scale(Susp..Solids..mg.L.)+scale(Total.N)+ scale(Temp...C.)+scale(DO..mg.L.)+ quality+landuse, data = training_data)
+
+summary(fits1cl)
+
+#This seems to be hard to interpret
+
+fits2cl =  multinom(pHlabel ~ scale(EC..uS.cm.)+scale(Turb...NTU.^2)+scale(Susp..Solids..mg.L.)+scale(Total.N)+scale(Total.P..mg.L.as.P.)+quality, data = training_data)
+
+summary(fits2cl)
+#This is easier to interpret
+
+test_data$predictpH = predict(fits1cl,type = 'class',newdata = test_data)
+
+table(as.numeric(test_data$pHlabel),as.numeric(test_data$predictpH))
+auc(as.numeric(test_data$pHlabel),as.numeric(test_data$predictpH))
+
+plot.roc(test_data$pHlabel,as.numeric(test_data$predictpH))
+
+#Looks like logistic regression does not work too well. The linearity assumption is probably not valid. It turns out that logistic regression is the best performing classifier
+
+#Predicting quality as a function of other variables
+qfit_lr = multinom(training_data$quality ~. ,data = training_data[9:22])
+
+summary(qfit_lr)
+
+predictq_lr = predict(qfit_lr,type = 'class',newdata = test_data)
+
+table(as.numeric(test_data$quality),as.numeric(predictq_lr))
+auc(as.numeric(test_data$quality),as.numeric(predictq_lr))
+
+plot.roc(test_data$quality,as.numeric(predictq_lr))
+
+
+```
+
+```{r - Modeling part 3 - Clustering to build clusters of Water quality}
+#We want to find water quality clusters in the dataset.
+kmeans1 = kmeans(ya[9:22],3,nstart = 20)
+
+plot(ya[9:22], col=(kmeans1$cluster +1), main="K-Means Clustering Results with K=3", pch=20, cex=2)
+
+kmeans1$tot.withinss
+
+diss1 = daisy(ya[9:22])
+de1 = diss1^2
+sk1 =  silhouette(kmeans1$cluster,de1)
+plot(sk1)
+summary(kmeans1)
+
+plotcluster(ya[9:22], kmeans1$cluster)
+
+kmeans2 = kmeans(ya[9:22],4,nstart = 20)
+
+kmeans2$tot.withinss
+summary(kmeans2)
+
+plotcluster(ya[9:22], kmeans2$cluster)
+
+kmeans3 = kmeans(ya[9:22],5,nstart = 20)
+summary(kmeans3)
+kmeans3$tot.withinss
+
+plotcluster(ya[9:22], kmeans3$cluster)
+clusplot(ya[9:22], kmeans3$cluster, color=TRUE, shade=TRUE, labels=2, lines=0)
+unique(ya$New.Site.Code...post.Jun.2007.)
+
+```
+
+
+```{r - Modeling part 4 - Decision Trees for classifying Water pH Labels and water quality}
+
+
+
+```
+
+```{r - Modeling Part 5 - Support Vector Machines Classfication for pH Level}
+training_data$pHlabel = cut(training_data$pH,2*(2:6),labels = c('Acidic','Slightly Acidic','Neutral','Slightly Basic'))
+
+test_data$pHlabel = cut(test_data$pH,2*(2:6),labels = c('Acidic','Slightly Acidic','Neutral','Slightly Basic'))
+
+fits1svm =  svm(pHlabel ~ scale(EC..uS.cm.)+scale(Turb...NTU.^2)+scale(Susp..Solids..mg.L.)+scale(Total.N)+scale(Total.P..mg.L.as.P.)+quality,kernel = 'polynomial',cost = 1, data = training_data,scale = T)
+
+predpHsvm = predict(fits1svm,newdata = test_data)
+
+table(test_data$pHlabel,predpHsvm)
+auc(as.numeric(test_data$pHlabel),as.numeric(predpHsvm))
+
+plot.roc(test_data$pHlabel,as.numeric(predpHsvm))
+
+
+
+
+#plot(fits1svm,training_data)
+
+#tune1svm = tune(svm,pHlabel ~ scale(EC..uS.cm.)+scale(Turb...NTU.^2)+scale(Susp..Solids..mg.L.)+scale(Total.N)+scale(Total.P..mg.L.as.P.),data = training_data,kernel = 'linear',ranges = list(cost = c(0.1,1,5,10,100)))
+
+#summary(tune1svm)
+
+
+qfit_psvm = svm(training_data$quality ~. ,data = training_data[9:22], kernel = 'polynomial', cost = 10)
+
+qfit_lsvm = svm(training_data$quality ~. ,data = training_data[9:22], kernel = 'linear', cost = 10)
+
+qfit_rbsvm = svm(training_data$quality ~. ,data = training_data[9:22], kernel = 'radial', cost = 10)
+
+summary(qfit_psvm)
+summary(qfit_lsvm)
+summary(qfit_rbsvm)
+
+predictq_p = predict(qfit_psvm,type = 'class',newdata = test_data)
+predictq_l = predict(qfit_lsvm,type = 'class',newdata = test_data)
+predictq_rb = predict(qfit_rbsvm,type = 'class',newdata = test_data)
+
+
+
+table(as.numeric(test_data$quality),as.numeric(predictq_p))
+table(as.numeric(test_data$quality),as.numeric(predictq_l))
+table(as.numeric(test_data$quality),as.numeric(predictq_rb))
+
+AUC = list()
+AUC[1] = auc(as.numeric(test_data$quality),as.numeric(predictq_p))
+AUC[2] = auc(as.numeric(test_data$quality),as.numeric(predictq_l))
+AUC[3] = auc(as.numeric(test_data$quality),as.numeric(predictq_rb))
+
+
+
+plot.roc(test_data$quality,as.numeric(predictq_p))
+plot.roc(test_data$quality,as.numeric(predictq_l))
+plot.roc(test_data$quality,as.numeric(predictq_rb))
+
+
+#SVM Regression for E Coli count
+
+e_lsvm = svm(training_data$E..coli..MF. ~ ., data = training_data[9:22], scale = T, type = 'eps-regression', kernel = 'polynomial', cost = 100, epsilon = 0.1, tolerance = 0.001, shrinking = T, fitted = T)
+
+e_lsvm
+
+e_lsvm.pred = predict(e_lsvm, newdata = test_data[9:22])
+e_lsvm.rss = sum((test_data$E..coli..MF. - e_lsvm.pred)^2)
+
+def.pred = mean(training_data$E..coli..MF.)
+def.rss = sum((test_data$E..coli..MF. - def.pred)^2)
+e_lsvm.r2pseudo = (1- (e_lsvm.rss/def.rss))
+
+```
+
+```{r - Modeling Part 6 - K Nearest Neighbors}
+training_data$pHlabel = cut(training_data$pH,2*(2:5),labels = c('Acidic','Slightly Acidic','Neutral'))
+test_data$pHlabel = cut(test_data$pH,2*(2:5),labels = c('Acidic','Slightly Acidic','Neutral'))
+
+trainx = training_data$EC..uS.cm. + training_data$
+
+KNN1 = knn()
 
 
 
 
 ```
 
-```{r - Modeling part 3 - Clustering}
+```{r - Modeling Part 7 - Regression with automatic feature selection and cross-validation}
+#Ridge regression
+grid=10^seq(10,-2, length =100)
+x = model.matrix(ya$E..coli..MF. ~.,data = ya[9:22])
+y = ya$E..coli..MF.
+ridge.mod = glmnet(x,y,alpha=0, lambda=grid)
+
+#cross-validation
+set.seed(1)
+train=sample (1: nrow(x), nrow(x)/2)
+test=(-train)
+y.test=y[test]
+cv.out=cv.glmnet(x[train ,],y[ train],alpha=0)
+plot(cv.out)
+bestlam =cv.out$lambda.min
+ridge.pred=predict(ridge.mod ,s=bestlam ,newx=x[test ,])
+mean((ridge.pred -y.test)^2)
+out=glmnet(x,y,alpha=0)
+ridge.coef=predict(out ,type="coefficients",s= bestlam) [1:16,]
+
+
+#Lasso regression
+lasso.mod=glmnet(x[train ,],y[ train],alpha=1, lambda =grid)
+plot(lasso.mod)
+
+#cross-validation
+set.seed(1)
+cv.out=cv.glmnet(x[train ,],y[ train],alpha=1)
+plot(cv.out)
+bestlam =cv.out$lambda.min
+lasso.pred=predict(lasso.mod ,s=bestlam ,newx=x[test ,])
+mean((lasso.pred -y.test)^2)
+
+out=glmnet (x,y,alpha=1, lambda=grid)
+lasso.coef=predict(out ,type="coefficients",s= bestlam) [1:16,]
+```
+
+```{r - Modeling Part 8 - Classfication with LDA, QDA}
+training_data$pHlabel = cut(training_data$pH,2*(2:5),labels = c('Acidic','Slightly Acidic','Neutral'))
+test_data$pHlabel = cut(test_data$pH,2*(2:5),labels = c('Acidic','Slightly Acidic','Neutral'))
+LDA1 = lda(pHlabel ~ scale(EC..uS.cm.)+scale(Turb...NTU.^2)+scale(Susp..Solids..mg.L.)+scale(Total.N)+scale(Total.P..mg.L.as.P.)+quality, data = training_data)
+
+summary(LDA1)
+LDA1
+
+predPHLDA = predict(LDA1, newdata = test_data, type = 'class')
+
+table(as.numeric(test_data$pHlabel),as.numeric(predPHLDA$class))
+auc(as.numeric(test_data$pHlabel),as.numeric(predPHLDA$class))
+
+plot.roc(test_data$pHlabel,as.numeric(predPHLDA$class))
+
+#QDA
+
+QDA1 = qda(pHlabel ~ scale(EC..uS.cm.)+scale(Turb...NTU.^2)+scale(Susp..Solids..mg.L.)+scale(Total.N)+scale(Total.P..mg.L.as.P.)+quality, data = training_data)
+
+summary(QDA1)
+QDA1
+
+predPHQDA = predict(QDA1, newdata = test_data, type = 'class')
+
+table(as.numeric(test_data$pHlabel),as.numeric(predPHQDA$class))
+auc(as.numeric(test_data$pHlabel),as.numeric(predPHQDA$class))
+
+plot.roc(test_data$pHlabel,as.numeric(predPHQDA$class))
+
+#As we can see all the classification algorithms fail due to dataset bias of a large number of samples only for Slightly Acidic
+
+#LDA
+qfit_LDA = lda(training_data$quality ~. ,data = training_data[9:22])
+
+summary(qfit_LDA)
+
+predictq_LDA = predict(qfit_LDA,type = 'class',newdata = test_data)
+
+table(as.numeric(test_data$quality),as.numeric(predictq_LDA$class))
+AUC[4] =auc(as.numeric(test_data$quality),as.numeric(predictq_LDA$class))
+
+plot.roc(test_data$quality,as.numeric(predictq_LDA$class))
+
+
+#QDA
+
+qfit_QDA = multinom(training_data$quality ~. ,data = training_data[9:22])
+
+summary(qfit_QDA)
+
+predictq_QDA = predict(qfit_QDA,type = 'class',newdata = test_data)
+
+table(as.numeric(test_data$quality),as.numeric(predictq_QDA))
+AUC[5] =auc(as.numeric(test_data$quality),as.numeric(predictq_QDA))
+
+plot.roc(test_data$quality,as.numeric(predictq_QDA))
+
+#Comparing AUC for QDA,LDA,SVM with different kernels, Logistic Regression for quality data
+
+barplot(as.numeric(AUC), names.arg = c('PSVM','LSVM','RSVM','LDA','QDA'),ylim = c(0,1), main = 'Comparing AUC for QDA,LDA,SVMs')
+abline(h = 0.5)
+abline(h = 0)
+abline(h = 0.6)
+abline(h = 0.7)
+```
+
+```{r - Graphs showing performance of models vs each other - Classification and Regression}
 
 ```
 
