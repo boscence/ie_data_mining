@@ -7,7 +7,7 @@ df = as.data.frame(df)
 head(df)
 head(df[,1:200])
 
-
+# Just a test to play with github
 
 ####
 ## Here I identify the questions about demographics
