@@ -44,17 +44,82 @@ sp + facet_grid(. ~edad) # Nothing notable
 
 
 ####
-## Here we identify the questions about the importance for each 
+## Here we identify the questions about the importance for each segment
 ####
 
-
-
+###
 # Transport
+###
+
+##For transport, we now scale the data. We work out the average score for transport per person.
+#We then subtract the score from the average for each question.
+#Positive scores now mean that, for transport, the person values this aspect of transport. 
+#For example, across transport, a person's average score is 4.
+#If they rate intelligent transport as 3, then they may see this segment as less important.
+
+#Create the average
+df_trans_sum = (as.numeric(df$p2.2.2.it1.Slice) +
+                  as.numeric(df$p2.2.2.it2.Slice) +
+                  as.numeric(df$p2.2.2.it3.Slice) +
+                  as.numeric(df$p2.2.2.it4.Slice) +
+                  as.numeric(df$p2.2.2.it5.Slice) + 
+                  as.numeric(df$p2.2.2.it6.Slice))
+
+df_trans_ave = (as.numeric(df$p2.2.2.it1.Slice) +
+                  as.numeric(df$p2.2.2.it2.Slice) +
+                  as.numeric(df$p2.2.2.it3.Slice) +
+                  as.numeric(df$p2.2.2.it4.Slice) +
+                  as.numeric(df$p2.2.2.it5.Slice) + 
+                  as.numeric(df$p2.2.2.it6.Slice)) / 6
+
+hist(df_trans_ave)
+
+#Scale the scores
+df$p2.2.2.it1.Slice_scale = as.numeric(df$p2.2.2.it1.Slice) - df_trans_ave
+df$p2.2.2.it2.Slice_scale = as.numeric(df$p2.2.2.it2.Slice) - df_trans_ave
+df$p2.2.2.it3.Slice_scale = as.numeric(df$p2.2.2.it3.Slice) - df_trans_ave
+df$p2.2.2.it4.Slice_scale = as.numeric(df$p2.2.2.it4.Slice) - df_trans_ave
+df$p2.2.2.it5.Slice_scale = as.numeric(df$p2.2.2.it5.Slice) - df_trans_ave
+df$p2.2.2.it6.Slice_scale = as.numeric(df$p2.2.2.it6.Slice) - df_trans_ave
+
+#Look at the means
+mean(df$p2.2.2.it1.Slice_scale)
+mean(df$p2.2.2.it2.Slice_scale)
+mean(df$p2.2.2.it3.Slice_scale)
+mean(df$p2.2.2.it4.Slice_scale)
+mean(df$p2.2.2.it5.Slice_scale)
+mean(df$p2.2.2.it6.Slice_scale)
+
+###Here we check if score for all transport is significantly different for gender.
+tr_aov = aov(df_trans_sum~sexo,df)
+summary(tr_aov) # We see difference
+#The P-Value is above .05. This means that, given the null is true, there is evidence to suggest the alternative is true.
+
+#Now we look at the density of the sum of transport scores
+tr <- ggplot(df, aes(x=df_trans_sum )) + geom_density(fill="white", colour="black")
+tr # Intelligent transport such as integrated fairs and real time planning
+tr + facet_grid(. ~ sexo)   # Men appear to rate intelligent transport higher than women 
+tr + facet_grid(. ~ClaseSocial)  #
+tr + facet_grid(. ~edad) # Younger participants appear to rate intelligent transport lower
+
+#Here we look at thetransport scores by segment
 inte_tr <- ggplot(df, aes(x=p2.2.2.it1.Slice)) + geom_bar(fill="white", colour="black") + theme(axis.text.x=element_text(angle=90,hjust=1,vjust=0.5))
 inte_tr # Intelligent transport such as integrated fairs and real time planning
 inte_tr + facet_grid(. ~ sexo)   # Men appear to rate intelligent transport higher than women 
 inte_tr + facet_grid(. ~ClaseSocial)  #
 inte_tr + facet_grid(. ~edad) # Younger participants appear to rate intelligent transport lower
+
+inte_tr_sc <- ggplot(df, aes(x=p2.2.2.it1.Slice_scale )) + geom_histogram(fill="white", colour="black") + theme(axis.text.x=element_text(angle=90,hjust=1,vjust=0.5))
+inte_tr_sc # Intelligent transport such as integrated fairs and real time planning
+inte_tr_sc + facet_grid(. ~ sexo)   # Men appear to rate intelligent transport higher than women 
+inte_tr_sc + facet_grid(. ~ClaseSocial)  #
+inte_tr_sc + facet_grid(. ~edad) # Younger participants appear to rate intelligent transport lower
+
+
+###Here we check if score is significantly different for gender.
+inte_tr_aov = aov(as.numeric(p2.2.2.it1.Slice)~sexo,df)
+summary(inte_tr_aov) # Given that the null is true, there is no evidence to suggest the alternative is true
+
 
 control_tr <- ggplot(df, aes(x=p2.2.2.it2.Slice)) + geom_bar(fill="white", colour="black") + theme(axis.text.x=element_text(angle=90,hjust=1,vjust=0.5))
 control_tr # control measures such as traffic restrictions, tolls etc
@@ -89,7 +154,6 @@ parkintel_tr + facet_grid(. ~ClaseSocial)  #
 parkintel_tr + facet_grid(. ~edad) # 
 #Of interest, there do not seem to be any clear differences across our three facets.
 
-
 plot(df$p2.2.2.it6.Slice)## Electric Vehicles
 elecvehicles_tr <- ggplot(df, aes(x=p2.2.2.it6.Slice)) + geom_bar(fill="white", colour="black") + theme(axis.text.x=element_text(angle=90,hjust=1,vjust=0.5))
 elecvehicles_tr # Introduction of these vehicles and necessary infrastructure.
@@ -98,7 +162,6 @@ elecvehicles_tr + facet_grid(. ~ClaseSocial)  #
 elecvehicles_tr + facet_grid(. ~edad) # 
 #Electric vehicles appear to be important. 
 #Would this relate to the fact that air polution is important in many European Cities?
-
 
 
 # Security 
