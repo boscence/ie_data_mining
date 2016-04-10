@@ -27,7 +27,7 @@ table(df$sexo)#gender
 table(df$ClaseSocial) #social class 
 
 ####
-## Here I identify the questions about if the respondant knows about smart cities 
+## Here we identify the questions about if the respondant knows about smart cities 
 ####
 
 plot(df$p1.1, main = "Answer to 'Do you know about smart cities' by number of respondents")  ##Do you know about smart cities 
@@ -44,16 +44,62 @@ sp + facet_grid(. ~edad) # Nothing notable
 
 
 ####
-## Here I identify the questions about the importance for each 
+## Here we identify the questions about the importance for each 
 ####
 
+
+
 # Transport
-plot(df$p2.2.2.it1.Slice)## Intellegent Transport
-plot(df$p2.2.2.it2.Slice)## Control Measures
-plot(df$p2.2.2.it3.Slice)## Real time traffic management
+inte_tr <- ggplot(df, aes(x=p2.2.2.it1.Slice)) + geom_bar(fill="white", colour="black") + theme(axis.text.x=element_text(angle=90,hjust=1,vjust=0.5))
+inte_tr # Intelligent transport such as integrated fairs and real time planning
+inte_tr + facet_grid(. ~ sexo)   # Men appear to rate intelligent transport higher than women 
+inte_tr + facet_grid(. ~ClaseSocial)  #
+inte_tr + facet_grid(. ~edad) # Younger participants appear to rate intelligent transport lower
+
+control_tr <- ggplot(df, aes(x=p2.2.2.it2.Slice)) + geom_bar(fill="white", colour="black") + theme(axis.text.x=element_text(angle=90,hjust=1,vjust=0.5))
+control_tr # control measures such as traffic restrictions, tolls etc
+control_tr + facet_grid(. ~ sexo)   #  
+control_tr + facet_grid(. ~ClaseSocial)  #
+control_tr + facet_grid(. ~edad) # 
+#In general, control methods appear to be less supported than intelligent measures.
+
+realtime_tr <- ggplot(df, aes(x=p2.2.2.it3.Slice)) + geom_bar(fill="white", colour="black") + theme(axis.text.x=element_text(angle=90,hjust=1,vjust=0.5))
+realtime_tr # Real time traffic management
+realtime_tr + facet_grid(. ~ sexo)   #  
+realtime_tr + facet_grid(. ~ClaseSocial)  #
+realtime_tr + facet_grid(. ~edad) # 
+#Younger people appear to not value real time traffic management as much. 
+#Maybe this has something to do with the idea that fewer younger people are using road vehicles.
+#The car is not a status symbol for younger people, where it was for baby boomers
+
+
 plot(df$p2.2.2.it4.Slice)## Smart Fleet
+smrtfleet_tr <- ggplot(df, aes(x=p2.2.2.it4.Slice)) + geom_bar(fill="white", colour="black") + theme(axis.text.x=element_text(angle=90,hjust=1,vjust=0.5))
+smrtfleet_tr # Real time traffic management
+smrtfleet_tr + facet_grid(. ~ sexo)   #  
+smrtfleet_tr + facet_grid(. ~ClaseSocial)  #
+smrtfleet_tr + facet_grid(. ~edad) # 
+#Smart fleet appears to not be overly important across all facets.
+
 plot(df$p2.2.2.it5.Slice)## Parking Intelligence
+parkintel_tr <- ggplot(df, aes(x=p2.2.2.it5.Slice)) + geom_bar(fill="white", colour="black") + theme(axis.text.x=element_text(angle=90,hjust=1,vjust=0.5))
+parkintel_tr # Real time parking intelligence. Such as which spaces are free now.
+parkintel_tr + facet_grid(. ~ sexo)   #  
+parkintel_tr + facet_grid(. ~ClaseSocial)  #
+parkintel_tr + facet_grid(. ~edad) # 
+#Of interest, there do not seem to be any clear differences across our three facets.
+
+
 plot(df$p2.2.2.it6.Slice)## Electric Vehicles
+elecvehicles_tr <- ggplot(df, aes(x=p2.2.2.it6.Slice)) + geom_bar(fill="white", colour="black") + theme(axis.text.x=element_text(angle=90,hjust=1,vjust=0.5))
+elecvehicles_tr # Introduction of these vehicles and necessary infrastructure.
+elecvehicles_tr + facet_grid(. ~ sexo)   #  
+elecvehicles_tr + facet_grid(. ~ClaseSocial)  #
+elecvehicles_tr + facet_grid(. ~edad) # 
+#Electric vehicles appear to be important. 
+#Would this relate to the fact that air polution is important in many European Cities?
+
+
 
 # Security 
 plot(df$p2.3.2.it1.Slice)## Video Survallence
