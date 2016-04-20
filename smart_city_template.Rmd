@@ -1,0 +1,141 @@
+---
+title: "smart_cities_template - for the 6 themes"
+author: "AB"
+date: "20 April 2016"
+output: html_document
+---
+#Smart Cities Data - Template
+## Introduction
+This analysis etc etc etc
+
+
+```{r, include=F, echo=F}
+library(foreign)
+library(ggplot2)
+library(Hmisc)
+library(gridExtra)
+
+
+setwd("/home/ab/Documents/MBD/data_mining/assignment3/data")
+list.files()
+df1 = spss.get("SPSS_Smart_Cities.sav" ) # Changed form read.spss to spss.get. This gives us the survey topics directly.
+df = as.data.frame(df1)
+
+levels(df$p1.1) <- c(levels(df$p1.1), "Si, Pero no") 
+df$p1.1[df$p1.1 == "Lo he escuchado pero desconozco su significado"] <- "Si, Pero no"  # Change long answer to shorter answer to better fit visualizations. 
+levels(df$p1.1) <- c(levels(df$p1.1), "Si, Pero no") 
+df$p1.1 = factor(df$p1.1)
+
+levels(df$ClaseSocial) = c("Alta","Media Alta","Media","Media Baja","Baja")
+
+```
+
+##Exploritory Analysis
+###Overview
+In total, there were 1810 respondants from 14 cities in Spain.
+Surveys were taken from between the 14th of May 2015 and the 26th of May 2015. 
+
+```{r,include=F, echo=F}
+length(df)
+table(df$ciudadq)
+sort(table(df$yyyymmdd))
+```
+
+### Basic Demographics
+Participants were asked some basic demographic questions such as gender, age and social class.
+The participants were nearly 50/50 split by gender, with 604 being men and 601 being women.
+By age, the participants fall evenly into the three age groups.
+- 401 were between 18 and 29 years
+- 402 were between 30 and 45
+- 402 were between 45 and 60.
+
+```{r,include=F, echo=F}
+table(df$sexo)
+table(df$edad)
+```
+
+Social Class was less even than the other deomographic groups. Chart 1 shows the count by identified social class.
+```{r,echo=F,fig.width=10}
+qplot(df$ClaseSocial, main = "Chart 1 - Respondents by Class")
+```
+
+##Introductory Questions
+###Knowledge about Smart Cities
+Respondents were first asked if they knew the smart city concept. The results indicate that more respondents knew about the smart city concept than those that don't. However, we see in chart 2, that many respondents knew about the concept are undertain what it means excatly. People know about the idea but lack an understanding about the details.
+
+```{r,echo = F,fig.width=10}
+know = ggplot(df, aes(x=p1.1)) + geom_bar(fill="grey", colour="black") + theme(axis.text.x=element_text(angle=90,hjust=1,vjust=0.5))
+know + labs(title = "Chart 2 - Knowledge of smart cities, number of respondents") 
+```
+
+###Knowledge about Smart Cities by Gender
+When we break down the knowledge about smart cities by gender, we see that more men identified as being knowledgable about smart cities when compared to women. Women appear to be either be less knowledgable or more willing to admit that they do not know about the concept (Chart 3). 
+
+```{r,echo=F,fig.width=10}
+plot(df$sexo,df$p1.1, xlab = "Gender", ylab = "Knowledge", main = "Chart 3 - Knowledge of smart cities, number of respondents by Gender")
+```
+
+
+###Knowledge about Smart Cities by Age
+Segmenting by age group, we see that more people in oldest age group admitted to not knowing about the smart city concept. Less than 40 percent of participants in the 46 to 60 year age group said their knew about smart cities. The two other groups, between 18 and 29 and between 30 and 45 had similar proportions in their answers (Chart 4).
+
+```{r,echo=F,fig.width=10}
+plot(df$edad,df$p1.1, xlab = "Gender", ylab = "Knowledge", main = "Chart 4 - Knowledge of smart cities, number of respondents by Age")
+```
+
+###Knowledge about Smart Cities by Class
+By class, we see that the higher classes reported more yes' when compared to lower classes. Over 50 percent of participants in the Alta Class said their knew about smart cities. While less than 30 percent reported the same response in the Media Baja and Baja Classes (Chart 5).
+
+```{r,echo=F,fig.width=10}
+plot(df$ClaseSocial,df$p1.1, xlab = "Gender", ylab = "Knowledge", main = "Chart 5 - Knowledge of smart cities, number of respondents by Class")
+```
+
+
+## Importance of Smart City initiatives in Mobility
+### Overview
+Participants were asked their opinion on howimportant six specific improvement were to them. They were asked to answer 1 if the improvement is not important and answer 5 if the initiative is Very Important. The six improvements were
+- Intelligent Public Transport
+- Automated Vehicle Access Restrictions and Tolls
+- Intelligent Traffic Management
+- Intelligent Fleet Management
+- Parking Intelligence
+- Electric Vehicle Infrastructure
+
+Each improvement included examples of what this improvement might mean. 
+
+###Responses
+Charts 6 to 11 below show the frequency of responses for each importance level. They indicate that Intelligent Public Transport and Electric Vehicle Infrastructure are the most important mobility initiatives. On the contrary, initiatives focused on Access Restrictions appear to be the least popular. 
+```{r,echo=F,fig.width=10}
+inte_tr1 = ggplot(df, aes(x = p2.2.2.it1.Slice)) +  geom_bar(aes(y = (..count..)/sum(..count..))) + ggtitle("Chart 6 - Responses to Intelligent Public Transport") + xlab("Importance") + ylab("Percent")
+
+inte_tr2 = ggplot(df, aes(x = p2.2.2.it2.Slice)) +  geom_bar(aes(y = (..count..)/sum(..count..))) + ggtitle("Chart 7 - Responses to Access Restrictions") + xlab("Importance") + ylab("Percent")
+
+inte_tr3 = ggplot(df, aes(x = p2.2.2.it3.Slice)) +  geom_bar(aes(y = (..count..)/sum(..count..))) + ggtitle("Chart 8 - Responses to Intelligent Traffic Management") + xlab("Importance") + ylab("Percent")
+
+inte_tr4 = ggplot(df, aes(x = p2.2.2.it4.Slice)) +  geom_bar(aes(y = (..count..)/sum(..count..))) + ggtitle("Chart 9 - Responses to Intelligent Fleet Management") + xlab("Importance") + ylab("Percent")
+
+inte_tr5 = ggplot(df, aes(x = p2.2.2.it5.Slice)) +  geom_bar(aes(y = (..count..)/sum(..count..))) + ggtitle("Chart 10 - Responses to Parking Intelligence") + xlab("Importance") + ylab("Percent")
+
+inte_tr6 = ggplot(df, aes(x = p2.2.2.it6.Slice)) +  geom_bar(aes(y = (..count..)/sum(..count..))) + ggtitle("Chart 11 - Responses to Electric Vehicle Infrastructure") + xlab("Importance") + ylab("Percent")
+
+grid.arrange(inte_tr1, inte_tr2,inte_tr3,inte_tr4,inte_tr5,inte_tr6, ncol=2)
+
+```
+
+###Gender
+```{r,echo=F}
+ggplot(df, aes(x = p2.2.2.it1.Slice)) +  geom_bar(aes(y = (..count..)/sum(..count..)))
+```
+
+###Gender
+```{r,echo=F}
+
+```
+
+###Gender
+```{r,echo=F}
+
+```
+
+
+
