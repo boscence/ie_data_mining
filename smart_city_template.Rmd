@@ -45,9 +45,9 @@ sort(table(df$yyyymmdd))
 Participants were asked some basic demographic questions such as gender, age and social class.
 The participants were nearly 50/50 split by gender, with 604 being men and 601 being women.
 By age, the participants fall evenly into the three age groups.
-- 401 were between 18 and 29 years
-- 402 were between 30 and 45
-- 402 were between 45 and 60.
+* 401 were between 18 and 29 years
+* 402 were between 30 and 45
+* 402 were between 45 and 60.
 
 ```{r,include=F, echo=F}
 table(df$sexo)
@@ -94,38 +94,127 @@ plot(df$ClaseSocial,df$p1.1, xlab = "Gender", ylab = "Knowledge", main = "Chart 
 ## Importance of Smart City initiatives in Mobility
 ### Overview
 Participants were asked their opinion on howimportant six specific improvement were to them. They were asked to answer 1 if the improvement is not important and answer 5 if the initiative is Very Important. The six improvements were
-- Intelligent Public Transport
-- Automated Vehicle Access Restrictions and Tolls
-- Intelligent Traffic Management
-- Intelligent Fleet Management
-- Parking Intelligence
-- Electric Vehicle Infrastructure
+* Intelligent Public Transport
+* Automated Vehicle Access Restrictions and Tolls
+* Intelligent Traffic Management
+* Intelligent Fleet Management
+* Parking Intelligence
+* Electric Vehicle Infrastructure
 
 Each improvement included examples of what this improvement might mean. 
 
 ###Responses
-Charts 6 to 11 below show the frequency of responses for each importance level. They indicate that Intelligent Public Transport and Electric Vehicle Infrastructure are the most important mobility initiatives. On the contrary, initiatives focused on Access Restrictions appear to be the least popular. 
+```{r, echo = F, include=F}
+#Create the sum of scores for transport
+df$df_trans_sum = (as.numeric(df$p2.2.2.it1.Slice) +
+                  as.numeric(df$p2.2.2.it2.Slice) +
+                  as.numeric(df$p2.2.2.it3.Slice) +
+                  as.numeric(df$p2.2.2.it4.Slice) +
+                  as.numeric(df$p2.2.2.it5.Slice) + 
+                  as.numeric(df$p2.2.2.it6.Slice))
+
+df$df_trans_ave = (as.numeric(df$p2.2.2.it1.Slice) +
+                  as.numeric(df$p2.2.2.it2.Slice) +
+                  as.numeric(df$p2.2.2.it3.Slice) +
+                  as.numeric(df$p2.2.2.it4.Slice) +
+                  as.numeric(df$p2.2.2.it5.Slice) + 
+                  as.numeric(df$p2.2.2.it6.Slice)) / 6
+
+```
+
+Mobility and transport was identified as being mostly important to respondents. Chart 6 below shows the histogram of the response scores, with a median of 3.8. 
+```{r, echo=F}
+inte_hist = ggplot(df, aes(x = df_trans_ave)) +  geom_bar() + ggtitle("Chart 6 - Average Responses to Mobility Questions") + xlab("Importance") + ylab("Count")  + geom_vline(show.legend = TRUE,xintercept=median(df$df_trans_ave), linetype = "longdash")
+inte_hist 
+```
+
+Charts 7 to 12 below show the frequency of responses for each importance level. They indicate that Intelligent Public Transport and Electric Vehicle Infrastructure are the most important mobility initiatives. On the contrary, initiatives focused on Access Restrictions appear to be the least popular. 
 ```{r,echo=F,fig.width=10}
-inte_tr1 = ggplot(df, aes(x = p2.2.2.it1.Slice)) +  geom_bar(aes(y = (..count..)/sum(..count..))) + ggtitle("Chart 6 - Responses to Intelligent Public Transport") + xlab("Importance") + ylab("Percent")
+inte_tr1 = ggplot(df, aes(x = p2.2.2.it1.Slice)) +  geom_bar(aes(y = (..count..)/sum(..count..))) + ggtitle("Chart 7 - Responses to Intelligent Public Transport") + xlab("Importance") + ylab("Percent")
 
-inte_tr2 = ggplot(df, aes(x = p2.2.2.it2.Slice)) +  geom_bar(aes(y = (..count..)/sum(..count..))) + ggtitle("Chart 7 - Responses to Access Restrictions") + xlab("Importance") + ylab("Percent")
+inte_tr2 = ggplot(df, aes(x = p2.2.2.it2.Slice)) +  geom_bar(aes(y = (..count..)/sum(..count..))) + ggtitle("Chart 8 - Responses to Access Restrictions") + xlab("Importance") + ylab("Percent")
 
-inte_tr3 = ggplot(df, aes(x = p2.2.2.it3.Slice)) +  geom_bar(aes(y = (..count..)/sum(..count..))) + ggtitle("Chart 8 - Responses to Intelligent Traffic Management") + xlab("Importance") + ylab("Percent")
+inte_tr3 = ggplot(df, aes(x = p2.2.2.it3.Slice)) +  geom_bar(aes(y = (..count..)/sum(..count..))) + ggtitle("Chart 9 - Responses to Intelligent Traffic Management") + xlab("Importance") + ylab("Percent")
 
-inte_tr4 = ggplot(df, aes(x = p2.2.2.it4.Slice)) +  geom_bar(aes(y = (..count..)/sum(..count..))) + ggtitle("Chart 9 - Responses to Intelligent Fleet Management") + xlab("Importance") + ylab("Percent")
+inte_tr4 = ggplot(df, aes(x = p2.2.2.it4.Slice)) +  geom_bar(aes(y = (..count..)/sum(..count..))) + ggtitle("Chart 10 - Responses to Intelligent Fleet Management") + xlab("Importance") + ylab("Percent")
 
-inte_tr5 = ggplot(df, aes(x = p2.2.2.it5.Slice)) +  geom_bar(aes(y = (..count..)/sum(..count..))) + ggtitle("Chart 10 - Responses to Parking Intelligence") + xlab("Importance") + ylab("Percent")
+inte_tr5 = ggplot(df, aes(x = p2.2.2.it5.Slice)) +  geom_bar(aes(y = (..count..)/sum(..count..))) + ggtitle("Chart 11 - Responses to Parking Intelligence") + xlab("Importance") + ylab("Percent")
 
-inte_tr6 = ggplot(df, aes(x = p2.2.2.it6.Slice)) +  geom_bar(aes(y = (..count..)/sum(..count..))) + ggtitle("Chart 11 - Responses to Electric Vehicle Infrastructure") + xlab("Importance") + ylab("Percent")
+inte_tr6 = ggplot(df, aes(x = p2.2.2.it6.Slice)) +  geom_bar(aes(y = (..count..)/sum(..count..))) + ggtitle("Chart 12 - Responses to Electric Vehicle Infrastructure") + xlab("Importance") + ylab("Percent")
 
 grid.arrange(inte_tr1, inte_tr2,inte_tr3,inte_tr4,inte_tr5,inte_tr6, ncol=2)
 
 ```
 
-###Gender
+##Intelligent Public Transport
+Participants were asked their view on important intelligent public transport. Intelligent public transport priority signals for public transport, integrated fares between bus, metro, suburban, realtime incidents and frequency services digital advice to travelers. Therefore, it looks at using technology to prioritise public transport and to intelligently notify users of public transport schedules. 
+
+###Intelligent Public Transport by Gender
+
+More female respondents beleived improvements in intelligent public transport was very important. Charts 13 and 14 show that forty five percent of female respondents rated intelligent public transport as very important. No females indicated intelligent public transport was not important. 
 ```{r,echo=F}
-ggplot(df, aes(x = p2.2.2.it1.Slice)) +  geom_bar(aes(y = (..count..)/sum(..count..)))
+inte_tr1_gm = ggplot(subset(df,sexo == 'Hombre'), aes(x = p2.2.2.it1.Slice)) +  geom_bar(aes(y = (..count..)/sum(..count..))) + ggtitle("Chart 13 - Male Responses to Intelligent Public Transport") + xlab("Importance") + ylab("Percent") + scale_x_discrete(drop=FALSE) + scale_y_continuous(limits = c(0,0.5),breaks = c(.1,.2,.3,.4,.5,.6))
+
+inte_tr1_gf = ggplot(subset(df,sexo == 'Mujer'), aes(x = p2.2.2.it1.Slice)) +  geom_bar(aes(y = (..count..)/sum(..count..))) + ggtitle("Chart 14 - Female Responses to Intelligent Public Transport") + xlab("Importance") + ylab("Percent") + scale_x_discrete(drop=FALSE) + scale_y_continuous(limits = c(0,0.5),breaks = c(.1,.2,.3,.4,.5,.6))
+
+grid.arrange(inte_tr1_gm, inte_tr1_gf, ncol=2)
 ```
+
+```{r}
+ggplot(df, aes(factor(sexo), as.numeric(p2.2.2.it1.Slice))) + geom_boxplot() + ggtitle("Do we include this? It is catagorical")
+```
+
+######Intelligent Public Transport by Gender - Statistical Difference
+This apparent difference is now tested statistically with the aim of determining if the difference in the sample can be hypothesised against the population as a whole.
+
+The T-Test below indicates that there is difference in the mean scores between men and women over the population. This indicates that men and women differ in their opinion of the importance of Intelligent Public Transport.
+
+The T-Test's parameters are
+* The Null Hypothesis states that there is no difference between the mean score for men and women.
+* The Alternative Hypothesis is that there is a difference between the mean score for men and women.
+* The Confidence internal is 95%.
+
+The resulting P-Value is 0.000172 which is under our critical. Therefore we reject the null hypothesis that the means are the same. 
+```{r,echo=F}
+inte_tr5_g_ttest = t.test(as.numeric(df$p2.2.2.it1.Slice)~df$sexo)
+inte_tr5_g_ttest$p.value
+```
+
+
+###Intelligent Public Transport by Age
+Older respondents indicated that the intelligent public transport was very important more than younger respondents. Charts 15 to 17 show that just over forty five percent of  respondents between the ages of 46 abd 60 rated intelligent public transport as very important. This is well above the 33 percent of respondents from the 18 to 29 age group.  
+
+```{r,echo=F}
+inte_tr1_a1 = ggplot(subset(df,edad == 'De 18 a 29 años'), aes(x = p2.2.2.it1.Slice)) +  geom_bar(aes(y = (..count..)/sum(..count..))) + ggtitle("Chart 15 - Responses to Intelligent Public Transport, \n 18-29 years") + xlab("Importance") + ylab("Percent") + scale_x_discrete(drop=FALSE) + scale_y_continuous(limits = c(0,0.5),breaks = c(.1,.2,.3,.4,.5,.6))
+
+inte_tr1_a2 = ggplot(subset(df,edad == 'De 30 a 45 años'), aes(x = p2.2.2.it1.Slice)) +  geom_bar(aes(y = (..count..)/sum(..count..))) + ggtitle("Chart 16 -  - Responses to Intelligent Public Transport, \n  30-45 years") + xlab("Importance") + ylab("Percent") + scale_x_discrete(drop=FALSE) + scale_y_continuous(limits = c(0,0.5),breaks = c(.1,.2,.3,.4,.5,.6))
+
+inte_tr1_a3 = ggplot(subset(df,edad == 'De 46 a 60 años'), aes(x = p2.2.2.it1.Slice)) +  geom_bar(aes(y = (..count..)/sum(..count..))) + ggtitle("Chart 17 - Responses to Intelligent Public Transport, \n  46-60 years") + xlab("Importance") + ylab("Percent") + scale_x_discrete(drop=FALSE) + scale_y_continuous(limits = c(0,0.5),breaks = c(.1,.2,.3,.4,.5,.6))
+
+grid.arrange(inte_tr1_a1, inte_tr1_a2,inte_tr1_a3, ncol=3)
+```
+
+```{r}
+ggplot(df, aes(factor(edad), as.numeric(p2.2.2.it1.Slice))) + geom_boxplot() + ggtitle("Do we include this? It is catagorical")
+```
+
+######Intelligent Public Transport by Age - Statistical Difference
+This obvious difference is now tested statistically with the aim of determining if the difference in the sample can be hypothesised against the population as a whole.
+
+The T-Test below indicates that there is difference in the mean scores between the age groups over the population. This indicates that the person's age influences their opinion of the importance of Intelligent Public Transport.
+
+The ANOVA parameters are
+* The Null Hypothesis states that there is no difference between the mean score for each age group.
+* The Alternative Hypothesis is that there is a difference between the mean score for each age group.
+* The Confidence internal is 95%.
+
+The resulting P-Value is 3.57e-06 is under our critical. Therefore we reject the null hypothesis that the means are the same.
+```{r,echo=F}
+inte_tr5_e_aov = aov(as.numeric(df$p2.2.2.it1.Slice)~df$edad)
+summary(inte_tr5_e_aov)
+```
+
+
 
 ###Gender
 ```{r,echo=F}
