@@ -265,49 +265,171 @@ inte_tr5_c_aov_no_baja = aov(as.numeric(df_no_baja$p2.2.2.it1.Slice)~df_no_baja$
 summary(inte_tr5_c_aov_no_baja)
 ```
 
+#################TENPLATE NOTES##################
+Hi Team
+So far, we have analysed one question, looking if there is difference between gender, age and class.
+We will repeat this for every question.
+
+Below, we do the same but on the scales scores
+############################################
+
+## Importance of Smart City initiatives in Mobility - Scaled Scores
+### Overview of Scaling
+
+The analysis above used the real scores. The real scores coded the responses from 1 to 5, with a Not Important  coded a 1 and a Very Important a 5.
+
+Using real values can make it hard to determine the real opinion of a person. For example, if a person's average score to every question is 2, then a 3 is a higher score for them. However, for the same question, a person with an everage of 4 may also give a 3. Using real scores both responses are the same when in reality the opinion from the respondent has a very different meaning. 
+
+```{r, echo=F, include=F}
+slices = df[,grepl( "^p.*Slice$",names(df))]
+slices = sapply(slices, as.numeric)
+slices_mean = rowMeans(slices)
+slices = as.data.frame(slices-slices_mean)
+names(slices) =  paste(names(slices),"_scaled",sep = '')
+df = as.data.frame(cbind(slices,df))
 
 
-```{r}
-bb = df[,grepl( "^p.*Slice$",names(df))]
+```
 
+## Importance of Smart City initiatives in Mobility
+### Overview
+Participants were asked their opinion on howimportant six specific improvement were to them. They were asked to answer 1 if the improvement is not important and answer 5 if the initiative is Very Important. The six improvements were
+* Intelligent Public Transport
+* Automated Vehicle Access Restrictions and Tolls
+* Intelligent Traffic Management
+* Intelligent Fleet Management
+* Parking Intelligence
+* Electric Vehicle Infrastructure
 
-cc = as.numeric(bb$p2.1.2.it1.Slice)
-sum(cc)
-dd = (cc - bb$p2.1.2.it1.Slice)
-cbind(cc,bb$p2.1.2.it1.Slice,dd)
+Each improvement included examples of what this improvement might mean. 
 
-x = list()
-for (i in bb){
-  z = (sum(as.numeric(i)))
-  x[[i]] = z
-  #print(length(i))
-}
+###Responses
+```{r, echo = F, include=F}
+#Create the sum of scores for transport
+df$slices_trans_sum_scaled = df$p2.2.2.it1.Slice_scaled +
+                  df$p2.2.2.it2.Slice_scaled +
+                  df$p2.2.2.it3.Slice_scaled +
+                  df$p2.2.2.it4.Slice_scaled +
+                  df$p2.2.2.it5.Slice_scaled + 
+                  df$p2.2.2.it6.Slice_scaled
 
+df$slices_trans_ave_scaled = df$p2.2.2.it2.Slice_scaled +
+                  df$p2.2.2.it2.Slice_scaled +
+                  df$p2.2.2.it3.Slice_scaled +
+                  df$p2.2.2.it4.Slice_scaled +
+                  df$p2.2.2.it5.Slice_scaled + 
+                  df$p2.2.2.it6.Slice_scaled / 6
 
-df_total = data.frame()
-for (i in bb){
+```
 
-# vector output
-model <- (sum(as.numeric(i)))
-
-# add vector to a dataframe
-df <- data.frame(model)
-df_total <- rbind(df_total,df)
-}
-
-datalist[[i]] <- dat
-
-rowsum(as.numeric(bb))
-
-bb$sum = colSums()
-
-bb$sum = xx
-    as.character(as.numeric(i)))}
-
-tail(bb)
-bb = numeric(bb)
-
-names(df[ , grepl( "^p.*Slice$" , names( df ) ) ])
+Using real scores, mobility and transport was identified as being mostly important to respondents. Chart 6 showed the histogram of the response scores, with a median of 3.8. Using the scaled scores, we see that average scaled score for transport and mobility is under 0. This means that they rated the transport and mobility improvement as less important as other themes.
+```{r, echo=F}
+inte_hist_slices_scaled = ggplot(df, aes(x = slices_trans_ave_scaled)) +  geom_histogram() + ggtitle("Chart 23 - Average Responses to Mobility Questions - Scaled") + xlab("Importance") + ylab("Count") + geom_vline(show.legend = TRUE,xintercept=0, linetype = "longdash")
+inte_hist_slices_scaled 
 ```
 
 
+Charts 24 to 29 below show the frequency of responses for each importance level. They indicate that Intelligent Public Transport is not as important to respondents than was indicated with the real scores.
+ Electric Vehicle Infrastructure was again seen as being important. Again, initiatives focused on Access Restrictions appear to be the least popular. 
+```{r,echo=F,fig.width=10}
+inte_tr1_scaled = ggplot(df, aes(x = p2.1.2.it1.Slice_scaled)) +  geom_density() + ggtitle("Chart 24 - Scaled Responses to Intelligent Public Transport") + xlab("Importance - Scaled") + ylab("Percent") + scale_x_continuous(breaks=seq(-4,4,1)) + xlim(-4, 4)
+
+inte_tr2_scaled = ggplot(df, aes(x = p2.2.2.it2.Slice_scaled)) +  geom_density() + ggtitle("Chart 25 - Scaled Responses to Access Restrictions") + xlab("Importance - Scaled") + ylab("Percent")+ scale_x_continuous(breaks=seq(-4,4,1)) + xlim(-4, 4)
+
+inte_tr3_scaled = ggplot(df, aes(x = p2.2.2.it3.Slice_scaled)) +  geom_density() + ggtitle("Chart 26 - Scaled Responses to Intelligent Traffic Management") + xlab("Importance - Scaled") + ylab("Percent")+ scale_x_continuous(breaks=seq(-4,4,1)) + xlim(-4, 4)
+
+inte_tr4_scaled = ggplot(df, aes(x = p2.2.2.it4.Slice_scaled)) +  geom_density() + ggtitle("Chart 27 - Scaled Responses to Intelligent Fleet Management") + xlab("Importance - Scaled") + ylab("Percent")+ scale_x_continuous(breaks=seq(-4,4,1)) + xlim(-4, 4)
+
+inte_tr5_scaled = ggplot(df, aes(x = p2.2.2.it5.Slice_scaled)) +  geom_density() + ggtitle("Chart 28 - Scaled Responses to Parking Intelligence") + xlab("Importance - Scaled") + ylab("Percent")+ scale_x_continuous(breaks=seq(-4,4,1)) + xlim(-4, 4)
+
+inte_tr6_scaled = ggplot(df, aes(x = p2.2.2.it6.Slice_scaled)) +  geom_density() + ggtitle("Chart 29 - Scaled Responses to Electric Vehicle Infrastructure") + xlab("Importance - Scaled") + ylab("Percent")+ scale_x_continuous(breaks=seq(-4,4,1)) + xlim(-4, 4)
+
+grid.arrange(inte_tr1_scaled, inte_tr2_scaled,inte_tr3_scaled,inte_tr4_scaled,inte_tr5_scaled,inte_tr6_scaled, ncol=2)
+
+```
+
+##Intelligent Public Transport - Scaled
+Participants scaled scores on important intelligent public transport are now analysed. 
+
+###Intelligent Public Transport by Gender - Sclaed
+Before scaling, we saw that the responsed between men and women appeard different.
+After scaling, we see that the responses appear similar.
+```{r,echo=F}
+ggplot(df,aes(x = p2.2.2.it1.Slice_scaled, color=sexo)) + geom_density() + ggtitle("Chart 30 - Scaled Responses to Intelligent Public Transport by Gender") + xlab("Importance - Scaled") + ylab("Count")
+```
+
+```{r}
+ggplot(df, aes(factor(sexo), p2.2.2.it1.Slice_scaled)) + geom_boxplot()
+```
+
+######Intelligent Public Transport by Gender - Statistical Difference of the Scaled Values
+This apparent difference is now tested statistically with the aim of determining if the difference in the sample can be hypothesised against the population as a whole.
+
+The T-Test below indicates that there is difference in the scaled mean scores between men and women over the population. This indicates that men and women differ in their opinion of the importance of Intelligent Public Transport.
+
+The T-Test's parameters are
+* The Null Hypothesis states that there is no difference between the mean score for men and women.
+* The Alternative Hypothesis is that there is a difference between the mean score for men and women.
+* The Confidence internal is 95%.
+
+The resulting P-Value is 0.01502675 which is under our critical. Therefore we reject the null hypothesis that the means are the same. 
+```{r,echo=F}
+inte_tr5_g_ttest_scaled = t.test(as.numeric(df$p2.2.2.it1.Slice_scaled)~df$sexo)
+inte_tr5_g_ttest_scaled$p.value
+```
+
+
+###Intelligent Public Transport by Age - Scaled
+Using scaled scores, the distribution of responses across age appears to be more similar.
+
+```{r,echo=F}
+ggplot(df,aes(x = p2.2.2.it1.Slice_scaled, color=edad)) + geom_density() + ggtitle("Chart 31 - Scaled Responses to Intelligent Public Transport by Age") + xlab("Importance - Scaled") + ylab("Count")
+```
+
+
+```{r}
+ggplot(df, aes(factor(edad), p2.2.2.it1.Slice_scaled)) + geom_boxplot()
+```
+
+###Intelligent Public Transport by Age - Statistical Difference of the Scaled Values
+This is now tested statistically with the aim of determining if the difference in the sample can be hypothesised against the population as a whole.
+
+The ANOVA below provides evidence that the mean scores between the age groups over the population is the same. This indicates that the person's age does not influence their opinion of the importance of Intelligent Public Transport.
+
+The ANOVA parameters were
+* The Null Hypothesis states that there is no difference between the mean scaled score for each age group.
+* The Alternative Hypothesis is that there is a difference between the mean score for each age group.
+* The Confidence internal is 95%.
+
+The resulting P-Value is 0.377 so we do not reject the null hypothesis using scaled values.
+```{r,echo=F}
+inte_tr5_e_aov_scaled = aov(df$p2.2.2.it1.Slice_scaled~df$edad)
+summary(inte_tr5_e_aov_scaled)
+```
+
+This is different to the results from the same test when using the real values.
+
+
+###Intelligent Public Transport by Class - Scaled
+Across the classes, there were only small differences in opinion about the importance of intelligent public transport. Chart 32 shows similar distributions for the Upper, Upper Middle, Middle and Lower Middles clases. The outlier, again, is the lower class. The result in this class group is likely influenced by the low number of total respondents in this group (15 respondents). 
+
+```{r,echo=F}
+ggplot(df,aes(x = p2.2.2.it1.Slice_scaled, color=ClaseSocial)) + geom_density() + ggtitle("Chart 32 - Scaled Responses to Intelligent Public Transport by Age") + xlab("Importance - Scaled") + ylab("Count")
+```
+
+
+```{r}
+ggplot(df, aes(factor(ClaseSocial), p2.2.2.it1.Slice_scaled)) + geom_boxplot()
+```
+
+###Intelligent Public Transport by Class - Statistical Difference of the Scaled Values
+
+Testing for significance of the different for the population, we see that the we do not have enough evidence to reject the null hypothesis.
+
+The resulting P-Value is 0.126 so we do not reject the null hypothesis using scaled values.
+```{r,echo=F}
+inte_tr5_c_aov_scaled = aov(df$p2.2.2.it1.Slice_scaled~df$ClaseSocial)
+summary(inte_tr5_c_aov_scaled)
+```
+
+This is different to the results from the same test when using the real values.
