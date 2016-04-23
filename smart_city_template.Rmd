@@ -75,7 +75,6 @@ When we break down the knowledge about smart cities by gender, we see that more 
 plot(df$sexo,df$p1.1, xlab = "Gender", ylab = "Knowledge", main = "Chart 3 - Knowledge of smart cities, number of respondents by Gender")
 ```
 
-
 ###Knowledge about Smart Cities by Age
 Segmenting by age group, we see that more people in oldest age group admitted to not knowing about the smart city concept. Less than 40 percent of participants in the 46 to 60 year age group said their knew about smart cities. The two other groups, between 18 and 29 and between 30 and 45 had similar proportions in their answers (Chart 4).
 
@@ -150,7 +149,6 @@ grid.arrange(inte_tr1, inte_tr2,inte_tr3,inte_tr4,inte_tr5,inte_tr6, ncol=2)
 Participants were asked their view on important intelligent public transport. Intelligent public transport priority signals for public transport, integrated fares between bus, metro, suburban, realtime incidents and frequency services digital advice to travelers. Therefore, it looks at using technology to prioritise public transport and to intelligently notify users of public transport schedules. 
 
 ###Intelligent Public Transport by Gender
-
 More female respondents beleived improvements in intelligent public transport was very important. Charts 13 and 14 show that forty five percent of female respondents rated intelligent public transport as very important. No females indicated intelligent public transport was not important. 
 ```{r,echo=F}
 inte_tr1_gm = ggplot(subset(df,sexo == 'Hombre'), aes(x = p2.2.2.it1.Slice)) +  geom_bar(aes(y = (..count..)/sum(..count..))) + ggtitle("Chart 13 - Male Responses to Intelligent Public Transport") + xlab("Importance") + ylab("Percent") + scale_x_discrete(drop=FALSE) + scale_y_continuous(limits = c(0,0.5),breaks = c(.1,.2,.3,.4,.5,.6))
@@ -201,9 +199,9 @@ ggplot(df, aes(factor(edad), as.numeric(p2.2.2.it1.Slice))) + geom_boxplot() + g
 ######Intelligent Public Transport by Age - Statistical Difference
 This obvious difference is now tested statistically with the aim of determining if the difference in the sample can be hypothesised against the population as a whole.
 
-The T-Test below indicates that there is difference in the mean scores between the age groups over the population. This indicates that the person's age influences their opinion of the importance of Intelligent Public Transport.
+The ANOVA below indicates that there is difference in the mean scores between the age groups over the population. This indicates that the person's age influences their opinion of the importance of Intelligent Public Transport.
 
-The ANOVA parameters are
+The ANOVA parameters were
 * The Null Hypothesis states that there is no difference between the mean score for each age group.
 * The Alternative Hypothesis is that there is a difference between the mean score for each age group.
 * The Confidence internal is 95%.
@@ -215,16 +213,101 @@ summary(inte_tr5_e_aov)
 ```
 
 
+###Intelligent Public Transport by Class
+Across the classes, there were only small differences in opinion about the importance of intelligent public transport. Charts 18 to 22 show that about forty percent of respondents in the Upper, Upper Middle, Middle and Lower Middles clases rated intelligent public transport as very important. The outlier is the lower class. The percetnage results in this class group is likely influenced by the low number of total respondents in this group (15 respondents). 
 
-###Gender
 ```{r,echo=F}
+inte_tr1_cla = ggplot(subset(df,ClaseSocial == 'Alta'), aes(x = p2.2.2.it1.Slice)) +  geom_bar(aes(y = (..count..)/sum(..count..))) + ggtitle("Chart 18 - Responses to Intelligent Public Transport, \n Upper Class") + xlab("Importance") + ylab("Percent") + scale_x_discrete(drop=FALSE) + scale_y_continuous(limits = c(0,0.5),breaks = c(.1,.2,.3,.4,.5,.6))
 
+inte_tr1_cma = ggplot(subset(df,ClaseSocial == 'Media Alta'), aes(x = p2.2.2.it1.Slice)) +  geom_bar(aes(y = (..count..)/sum(..count..))) + ggtitle("Chart 19 - Responses to Intelligent Public Transport, \n Upper Middle Class") + xlab("Importance") + ylab("Percent") + scale_x_discrete(drop=FALSE) + scale_y_continuous(limits = c(0,0.5),breaks = c(.1,.2,.3,.4,.5,.6))
+
+inte_tr1_cm = ggplot(subset(df,ClaseSocial == 'Media'), aes(x = p2.2.2.it1.Slice)) +  geom_bar(aes(y = (..count..)/sum(..count..))) + ggtitle("Chart 20 - Responses to Intelligent Public Transport, \n Middle Class") + xlab("Importance") + ylab("Percent") + scale_x_discrete(drop=FALSE) + scale_y_continuous(limits = c(0,0.5),breaks = c(.1,.2,.3,.4,.5,.6))
+
+inte_tr1_cmb = ggplot(subset(df,ClaseSocial == 'Media Baja'), aes(x = p2.2.2.it1.Slice)) +  geom_bar(aes(y = (..count..)/sum(..count..))) + ggtitle("Chart 21 - Responses to Intelligent Public Transport, \n Middle Lower Class") + xlab("Importance") + ylab("Percent") + scale_x_discrete(drop=FALSE) + scale_y_continuous(limits = c(0,0.5),breaks = c(.1,.2,.3,.4,.5,.6))
+
+inte_tr1_b = ggplot(subset(df,ClaseSocial == 'Baja'), aes(x = p2.2.2.it1.Slice)) +  geom_bar(aes(y = (..count..)/sum(..count..))) + ggtitle("Chart 22 - Responses to Intelligent Public Transport, \n Lower Class") + xlab("Importance") + ylab("Percent") + scale_x_discrete(drop=FALSE) + scale_y_continuous(limits = c(0,0.5),breaks = c(.1,.2,.3,.4,.5,.6))
+
+grid.arrange(inte_tr1_cla, inte_tr1_cma,inte_tr1_cm,inte_tr1_cmb,inte_tr1_b, ncol=3)
 ```
 
-###Gender
-```{r,echo=F}
-
+```{r}
+ggplot(df, aes(factor(ClaseSocial), as.numeric(p2.2.2.it1.Slice))) + geom_boxplot() + ggtitle("Do we include this? It is catagorical")
 ```
 
+######Intelligent Public Transport by Class - Statistical Difference
+Given that the Lower Class was so distinctively different from the other four classes, we can expect the ANOVA tests will confirm a difference in mean score for intellegent public transport across class.
+
+This is confirmed below, with the P-Value of 3.57e-06, indicating there is evidence to suggest there is a difference in means for the population.
+
+```{r,echo=F}
+inte_tr5_c_aov = aov(as.numeric(df$p2.2.2.it1.Slice)~df$ClaseSocial)
+summary(inte_tr5_e_aov)
+```
+
+However, a more interesting question is if there is a difference in mean in the Upper, Upper Middle, Middle and Lower Middle Clases, which appear to have a similar distribution.
+
+The ANOVA below indicates that there is no evidence to suggest there is difference in the mean scores between the four class groups. We do not reject the NULL.  This indicates that the person's class does not influence their opinion of the importance of Intelligent Public Transport.
+
+The ANOVA parameters were
+* The Null Hypothesis states that there is no difference between the mean score for the four class groups.
+* The Alternative Hypothesis is that there is a difference between the mean score for each the class groups.
+* The Confidence internal is 95%.
+
+The resulting P-Value is 0.344 is over the critical. Therefore we do not reject the null hypothesis that the means are the same.
+
+
+```{r,echo=F}
+df_no_baja =subset(df, ClaseSocial != 'Baja')
+df_no_baja$ClaseSocial = factor(df_no_baja$ClaseSocial)
+table(df_no_baja$ClaseSocial)
+
+inte_tr5_c_aov_no_baja = aov(as.numeric(df_no_baja$p2.2.2.it1.Slice)~df_no_baja$ClaseSocial)
+summary(inte_tr5_c_aov_no_baja)
+```
+
+
+
+```{r}
+bb = df[,grepl( "^p.*Slice$",names(df))]
+
+
+cc = as.numeric(bb$p2.1.2.it1.Slice)
+sum(cc)
+dd = (cc - bb$p2.1.2.it1.Slice)
+cbind(cc,bb$p2.1.2.it1.Slice,dd)
+
+x = list()
+for (i in bb){
+  z = (sum(as.numeric(i)))
+  x[[i]] = z
+  #print(length(i))
+}
+
+
+df_total = data.frame()
+for (i in bb){
+
+# vector output
+model <- (sum(as.numeric(i)))
+
+# add vector to a dataframe
+df <- data.frame(model)
+df_total <- rbind(df_total,df)
+}
+
+datalist[[i]] <- dat
+
+rowsum(as.numeric(bb))
+
+bb$sum = colSums()
+
+bb$sum = xx
+    as.character(as.numeric(i)))}
+
+tail(bb)
+bb = numeric(bb)
+
+names(df[ , grepl( "^p.*Slice$" , names( df ) ) ])
+```
 
 
